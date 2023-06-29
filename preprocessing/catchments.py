@@ -8,14 +8,14 @@ import config
 
 
 
-GRID = gpd.read_file("./data/grid/")[["YKR_ID", "geometry"]]
+GRID = gpd.read_file(Path("./data/grid/"))[["YKR_ID", "geometry"]]
 GRID = GRID.to_crs(epsg=4326)
 
 def main():
     for path in Path("./data/flat_matrix/").glob("*.txt"):
         try:
             traveltimes = pd.read_csv(
-                path, sep=';', na_values=['-1']
+                path, sep=";", na_values=["-1"]
             )
         except UnicodeDecodeError:
             continue
@@ -28,7 +28,7 @@ def main():
             tt_grid = GRID.merge(intrest_times, on=traveltimes["from_id"])
             tt_grid = tt_grid[["geometry", mode]]
 
-            tt_grid['t'] = np.NaN
+            tt_grid["t"] = np.NaN
             for time in reversed(config.TIMES):
                 mask = (tt_grid[mode] <= time)
                 tt_grid.loc[mask, "t"] = time
@@ -36,7 +36,10 @@ def main():
             clean = tt_grid.dropna()
             catchments = clean.dissolve("t").reset_index()
             catchments = catchments[["geometry", "t"]]
-            catchments.to_file(f"./data/catchments/{2018}_{mode}_{ykr_id}.geojson", driver="GeoJSON")
+            catchments.to_file(
+                Path(f"./data/catchments/{2018}_{mode}_{ykr_id}.geojson"),
+                driver="GeoJSON"
+            )
             print(f"processed {mode}")
 
 
