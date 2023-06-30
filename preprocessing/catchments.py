@@ -7,9 +7,9 @@ import numpy as np
 import config
 
 
-
 GRID = gpd.read_file(Path("./data/grid/"))[["YKR_ID", "geometry"]]
 GRID = GRID.to_crs(epsg=4326)
+
 
 def main():
     for path in Path("./data/flat_matrix/").glob("*.txt"):
