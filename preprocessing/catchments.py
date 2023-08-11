@@ -47,11 +47,18 @@ def get_paths_from_args():
 
 
 def preprocess_grid(grid):
+    """Reprojects the grid and discards unneeded data.
+
+    This means rounding all coordinates to 5 decimal places and removing crs
+    information after reprojection. The goal is to keep geojson size as small
+    as possible.
+    """
     def round_coords(feature):
         rounded_wkt = wkt.dumps(feature, rounding_precision=5)
         return wkt.loads(rounded_wkt)
     processed = grid.copy()
     processed = processed.to_crs(epsg=4326)
+    processed.crs = None
     processed["geometry"] = processed["geometry"].apply(round_coords)
     return processed
 
@@ -65,11 +72,12 @@ def get_grid_with_traveltimes(grid, traveltimes, mode):
 
 
 def dissolve_grid_to_catchments(tt_grid, breakpoints, mode):
-    for time in reversed(breakpoints):
+    for time in sorted(breakpoints, reverse=True):
         mask = (tt_grid[mode] <= time)
         tt_grid.loc[mask, "t"] = time
     clean = tt_grid.dropna()
     catchments = clean.dissolve("t").reset_index()
+    catchments["t"] = catchments["t"].astype(int)  # To save a tiny bit on output size
     catchments = catchments[["geometry", "t"]]
     return catchments
 
