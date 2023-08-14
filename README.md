@@ -19,4 +19,8 @@ Run:
 ```console
 python preprocessing/catchments.py -r <path/to/matrix/files> -w <directory/to/write/catchments/to>
 ```
+For example:
+```console
+python preprocessing/catchments.py -g data/grid -m data/HelsinkiTravelTimeMatrix2018 -w data/catchments -y 2018
+```
 to process a matrix. This will take a few hours depending on your hardware.

@@ -5,8 +5,9 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 
-import config
+from config import BREAKPOINTS, TRAVEL_MODES
 from grid import preprocess_grid
+from minify_geojson import minify_files_in_dir
 
 
 def main():
@@ -22,16 +23,16 @@ def main():
             continue
         ykr_id = str(matrix_path)[-11:-4]
         print(f"YKR_ID: {ykr_id}")
-        for mode in config.TRAVEL_MODES:
+        for mode in TRAVEL_MODES:
             tt_grid = get_grid_with_traveltimes(grid, matrix, mode)
             catchments = dissolve_grid_to_catchments(
-                tt_grid, breakpoints=config.TIMES, mode=mode
+                tt_grid, breakpoints=BREAKPOINTS, mode=mode
             )
-            catchments.to_file(
-                Path(args.write_dir / f"{2018}_{mode}_{ykr_id}.geojson"),
-                driver="GeoJSON"
+            write_catchments_to_geojson(
+                catchments, args.year, mode, ykr_id, args.write_dir
             )
-            print(f"processed {mode}")
+            print(f"    processed {mode}")
+    minify_files_in_dir(args.write_dir)
 
 
 def get_args():
@@ -39,8 +40,9 @@ def get_args():
     parser.add_argument("-g", "--grid_dir", type=Path)
     parser.add_argument("-m", "--matrix_dir", type=Path)
     parser.add_argument("-w", "--write_dir", type=Path)
-    paths = parser.parse_args()
-    return paths
+    parser.add_argument("-y", "--year", type=int)
+    args = parser.parse_args()
+    return args
 
 
 def get_grid_with_traveltimes(grid, traveltimes, mode):
@@ -60,6 +62,14 @@ def dissolve_grid_to_catchments(tt_grid, breakpoints, mode):
     catchments["t"] = catchments["t"].astype(int)  # To save a tiny bit on output size
     catchments = catchments[["geometry", "t"]]
     return catchments
+
+
+def write_catchments_to_geojson(gdf, year, mode, ykr_id, write_dir):
+    filename = f"{year}_{mode}_{ykr_id}.geojson"
+    gdf.to_file(
+        Path(write_dir / filename),
+        driver="GeoJSON"
+    )
 
 
 if __name__ == "__main__":
