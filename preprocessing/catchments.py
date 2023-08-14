@@ -4,63 +4,43 @@ from pathlib import Path
 import geopandas as gpd
 import pandas as pd
 import numpy as np
-from shapely import wkt
 
 import config
-
-
-GRID = gpd.read_file(Path("./data/grid/"))[["YKR_ID", "geometry"]]
+from grid import preprocess_grid
 
 
 def main():
-    grid = preprocess_grid(GRID)
-    read_path, write_path = get_paths_from_args()
-    for traveltime_filepath in read_path.rglob("*.txt"):
+    args = get_args()
+    grid = gpd.read_file(args.grid_dir)[["YKR_ID", "geometry"]]
+    grid = preprocess_grid(grid)
+    for matrix_path in args.matrix_dir.rglob("*.txt"):
         try:
-            traveltimes = pd.read_csv(
-                traveltime_filepath, sep=";", na_values=["-1"]
+            matrix = pd.read_csv(
+                matrix_path, sep=";", na_values=["-1"]
             )
         except UnicodeDecodeError:
             continue
-        ykr_id = str(traveltime_filepath)[-11:-4]
+        ykr_id = str(matrix_path)[-11:-4]
         print(f"YKR_ID: {ykr_id}")
         for mode in config.TRAVEL_MODES:
-            tt_grid = get_grid_with_traveltimes(grid, traveltimes, mode)
+            tt_grid = get_grid_with_traveltimes(grid, matrix, mode)
             catchments = dissolve_grid_to_catchments(
                 tt_grid, breakpoints=config.TIMES, mode=mode
             )
             catchments.to_file(
-                Path(write_path / f"{2018}_{mode}_{ykr_id}.geojson"),
+                Path(args.write_dir / f"{2018}_{mode}_{ykr_id}.geojson"),
                 driver="GeoJSON"
             )
             print(f"processed {mode}")
 
 
-def get_paths_from_args():
+def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-r", "--read_path", type=str)
-    parser.add_argument("-w", "--write_path", type=str)
-    args = parser.parse_args()
-    read_path = args.read_path
-    write_path = args.write_path
-    return Path(read_path), Path(write_path)
-
-
-def preprocess_grid(grid):
-    """Reprojects the grid and discards unneeded data.
-
-    This means rounding all coordinates to 5 decimal places and removing crs
-    information after reprojection. The goal is to keep geojson size as small
-    as possible.
-    """
-    def round_coords(feature):
-        rounded_wkt = wkt.dumps(feature, rounding_precision=5)
-        return wkt.loads(rounded_wkt)
-    processed = grid.copy()
-    processed = processed.to_crs(epsg=4326)
-    processed.crs = None
-    processed["geometry"] = processed["geometry"].apply(round_coords)
-    return processed
+    parser.add_argument("-g", "--grid_dir", type=Path)
+    parser.add_argument("-m", "--matrix_dir", type=Path)
+    parser.add_argument("-w", "--write_dir", type=Path)
+    paths = parser.parse_args()
+    return paths
 
 
 def get_grid_with_traveltimes(grid, traveltimes, mode):
