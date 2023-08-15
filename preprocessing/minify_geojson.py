@@ -1,6 +1,8 @@
 from pathlib import Path
 import json
 
+from logger import LOGGER
+
 
 def minify_files_in_dir(directory: Path):
     """Minifies all geojson files in a directory, in place."""
@@ -14,7 +16,12 @@ def minify_file(file_path: Path):
 
     with open(file_path, "r") as openfile:
         json_object = json.load(openfile)
-    minified = json.dumps(json_object, separators=(',', ':'))
+    minified = _minify_json_object(json_object)
     with open(file_path, "w") as outfile:
         outfile.write(minified)
-    print(f"Minified {file_path}")
+    LOGGER.info(f"Minified {file_path}")
+
+
+def _minify_json_object(json_object):
+    minified = json.dumps(json_object, separators=(',', ':'))
+    return minified

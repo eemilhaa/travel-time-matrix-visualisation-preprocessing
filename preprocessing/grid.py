@@ -9,17 +9,17 @@ from minify_geojson import minify_file
 
 def main():
     args = get_args()
-    grid = gpd.read_file(args.read_dir)[["YKR_ID", "geometry"]]
+    grid = gpd.read_file(args.read_path)[["YKR_ID", "geometry"]]
     grid = preprocess_grid(grid)
-    file_path = Path(args.write_dir / "grid.geojson")
-    grid.to_file(file_path, driver="GeoJSON")
-    minify_file(file_path)
+    write_path = Path(args.write_dir / "grid.geojson")
+    grid.to_file(write_path, driver="GeoJSON")
+    minify_file(write_path)
 
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-r", "--read_dir", type=Path)
-    parser.add_argument("-w", "--write_dir", type=Path)
+    parser.add_argument("-r", "--read_path", type=Path, required=True)
+    parser.add_argument("-w", "--write_dir", type=Path, required=True)
     args = parser.parse_args()
     return args
 
