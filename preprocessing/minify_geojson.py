@@ -1,3 +1,9 @@
+"""A module for doing the last bits of size optimisation on geojson files.
+
+This means stripping whitespace and newlines used by GeoPandas when writing to
+geojson. All other simplification (setting coordinate precision, setting data
+types, removing unneeded fields etc.) should be done before writing to a file.
+"""
 from pathlib import Path
 import json
 

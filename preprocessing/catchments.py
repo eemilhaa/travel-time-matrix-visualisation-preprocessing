@@ -1,3 +1,4 @@
+"""A script for producing catchment polygons in geojson format."""
 import argparse
 from pathlib import Path
 
@@ -6,23 +7,23 @@ import pandas as pd
 import numpy as np
 
 from config import BREAKPOINTS, TRAVEL_MODES
-from grid import preprocess_grid
+from minify_geodataframe import minify_geodataframe
 from logger import LOGGER
 from minify_geojson import minify_files_in_dir
 
 
 def main() -> None:
-    args = get_args()
+    args = _get_args()
     grid = gpd.read_file(args.grid_path)[["YKR_ID", "geometry"]]
-    grid = preprocess_grid(grid)
+    grid = minify_geodataframe(grid, epsg=4326, coordinate_precision=5)
     for matrix_path in args.matrix_dir.rglob("*.txt"):
         ykr_id = get_ykr_id_from_path(matrix_path)
         if not ykr_id:
-            continue  # Go next file if we cannot extract ykr_id from file name
+            continue  # Go next file if we cannot extract ykr_id from file path
         matrix = read_matrix_to_df(matrix_path)
         if type(matrix) != pd.DataFrame:
             continue  # or if we read an incompatible file
-        LOGGER.info(f"YKR_ID: {ykr_id}")
+        LOGGER.info(f"Processing YKR_ID {ykr_id}")
         for mode in TRAVEL_MODES:
             tt_grid = merge_traveltimes_to_grid(grid, matrix, mode)
             catchments = dissolve_grid_to_catchments(
@@ -35,7 +36,7 @@ def main() -> None:
     minify_files_in_dir(args.write_dir)
 
 
-def get_args() -> argparse.Namespace:
+def _get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("-g", "--grid_path", type=Path, required=True)
     parser.add_argument("-m", "--matrix_dir", type=Path, required=True)
@@ -71,7 +72,7 @@ def read_matrix_to_df(path: Path) -> pd.DataFrame | None:
     except UnicodeDecodeError as e:
         LOGGER.warning(f"Read an inccompatible file: {path}\n({e})")
         return None
-    if not "from_id" in matrix.columns:
+    if "from_id" not in matrix.columns:
         LOGGER.warning(
             f"from_id column missing from: {path}.\nMoving to next file."
         )
@@ -100,9 +101,9 @@ def dissolve_grid_to_catchments(
     """Makes the catchment polygons.
 
     This is done by iterating over the breakpoint values. Each cell gets
-    assigned the smallest breakpoint value in which it can be reached. This
-    value is stored in the column "t". After all breakpoints are checked,
-    the grid is dissolved based on column "t".
+    assigned the smallest breakpoint value within which it can be reached. This
+    value is stored in the column "t". After all breakpoints are checked, the
+    grid is dissolved based on column "t".
     """
     tt_grid["t"] = np.NaN
     for time in sorted(breakpoints, reverse=True):

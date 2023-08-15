@@ -1,5 +1,5 @@
 import logging
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(format="%(message)s", level=logging.INFO)
 LOGGER = logging.getLogger()
