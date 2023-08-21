@@ -17,10 +17,10 @@ Edit `preprocessing/config.py` to include the travel modes and breakpoints you w
 
 Run:
 ```console
-python preprocessing/catchments.py -r <path/to/matrix/files> -w <directory/to/write/catchments/to>
-```
-For example:
-```console
-python preprocessing/catchments.py -g data/grid -m data/HelsinkiTravelTimeMatrix2018 -w data/catchments -y 2018
+python preprocessing/catchments.py \
+  -g <directory/with/ykr-grid> \
+  -m <directory/with/matrix/files> \
+  -w <directory/to/write/catchments/to> \
+  -y <year/to/tag/output/files/with>
 ```
 to process a matrix. This will take a few hours depending on your hardware.
