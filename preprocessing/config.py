@@ -8,4 +8,4 @@ TRAVEL_MODES = [
     "car_m_t",
 ]
 
-TIMES = [15, 30, 45, 60, 75]
+BREAKPOINTS = [15, 30, 45, 60, 75]
