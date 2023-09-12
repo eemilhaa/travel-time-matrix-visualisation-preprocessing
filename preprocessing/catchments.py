@@ -28,29 +28,45 @@ def main() -> None:
         filetype = "csv"
         matrix_paths = list(user_args.matrix_dir.rglob("*.csv"))
 
-    for matrix_path in matrix_paths:
-        process_matrix((matrix_path, grid, user_args, filetype))
+    args = [(matrix_path, grid, user_args, filetype) for matrix_path in matrix_paths]
+    # for matrix_path in matrix_paths:
+    #     process_matrix((matrix_path, grid, user_args, filetype))
+    print(len(args))
+    process_parallel(args=args)
     minify_files_in_dir(user_args.write_dir)
 
 
-def process_matrix(args: tuple) -> str | None:
+def process_parallel(args: list) -> None:
+    """Process matrices in parallel.
+
+    Args:
+        args: A list of tuples. Each tuples gets passed to process_matrix().
+    """
+    cpus = cpu_count()
+    results = ThreadPool(cpus - 1).imap_unordered(process_matrix, args)
+    for result in results:
+        if result:
+            LOGGER.info(f"    saved output to {result}")
+
+
+def process_matrix(args: tuple) -> Path | None:
     matrix_path, grid, user_args, filetype = args
     ykr_id = get_ykr_id_from_path(matrix_path)
     if not ykr_id:
-        return
+        return None
     matrix = read_matrix_to_df(matrix_path, filetype)
     if type(matrix) != pd.DataFrame:
-        return
+        return None
     LOGGER.info(f"Processing YKR_ID {ykr_id}")
     for mode in TRAVEL_MODES:
         tt_grid = merge_traveltimes_to_grid(grid, matrix, mode)
         catchments = dissolve_grid_to_catchments(
             tt_grid, breakpoints=BREAKPOINTS, mode=mode
         )
-        write_catchments_to_geojson(
+        write_path = write_catchments_to_geojson(
             catchments, user_args.year, mode, ykr_id, user_args.write_dir
         )
-        LOGGER.info(f"    processed {mode}")
+        return write_path
 
 
 def _get_args() -> argparse.Namespace:
@@ -140,6 +156,7 @@ def write_catchments_to_geojson(gdf, year, mode, ykr_id, write_dir):
     filename = f"{year}_{mode}_{ykr_id}.geojson"
     write_path = Path(write_dir/ filename)
     gdf.to_file(write_path, driver="GeoJSON")
+    return write_path
 
 
 if __name__ == "__main__":

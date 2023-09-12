@@ -17,4 +17,4 @@ TRAVEL_MODES = [
     "pt_m_walk_avg",
 ]
 
-BREAKPOINTS = [15, 30, 45, 60, 75]
+BREAKPOINTS = [15, 30, 45, 60]
