@@ -1,6 +1,8 @@
 """A script for producing catchment polygons in geojson format."""
 import argparse
 from pathlib import Path
+from multiprocessing import cpu_count
+from multiprocessing.pool import ThreadPool
 
 import geopandas as gpd
 import pandas as pd
@@ -13,27 +15,42 @@ from minify_geojson import minify_files_in_dir
 
 
 def main() -> None:
-    args = _get_args()
-    grid = gpd.read_file(args.grid_path)[["YKR_ID", "geometry"]]
+    user_args = _get_args()
+    try:
+        grid = gpd.read_file(user_args.grid_path)[["YKR_ID", "geometry"]]
+    except KeyError:
+        grid = gpd.read_file(user_args.grid_path)[["id", "geometry"]]
     grid = minify_geodataframe(grid, epsg=4326, coordinate_precision=5)
-    for matrix_path in args.matrix_dir.rglob("*.txt"):
-        ykr_id = get_ykr_id_from_path(matrix_path)
-        if not ykr_id:
-            continue  # Go next file if we cannot extract ykr_id from file path
-        matrix = read_matrix_to_df(matrix_path)
-        if type(matrix) != pd.DataFrame:
-            continue  # or if we read an incompatible file
-        LOGGER.info(f"Processing YKR_ID {ykr_id}")
-        for mode in TRAVEL_MODES:
-            tt_grid = merge_traveltimes_to_grid(grid, matrix, mode)
-            catchments = dissolve_grid_to_catchments(
-                tt_grid, breakpoints=BREAKPOINTS, mode=mode
-            )
-            write_catchments_to_geojson(
-                catchments, args.year, mode, ykr_id, args.write_dir
-            )
-            LOGGER.info(f"    processed {mode}")
-    minify_files_in_dir(args.write_dir)
+
+    filetype = "txt"
+    matrix_paths = list(user_args.matrix_dir.rglob("*.txt"))
+    if len(matrix_paths) < 13000:
+        filetype = "csv"
+        matrix_paths = list(user_args.matrix_dir.rglob("*.csv"))
+
+    for matrix_path in matrix_paths:
+        process_matrix((matrix_path, grid, user_args, filetype))
+    minify_files_in_dir(user_args.write_dir)
+
+
+def process_matrix(args: tuple) -> str | None:
+    matrix_path, grid, user_args, filetype = args
+    ykr_id = get_ykr_id_from_path(matrix_path)
+    if not ykr_id:
+        return
+    matrix = read_matrix_to_df(matrix_path, filetype)
+    if type(matrix) != pd.DataFrame:
+        return
+    LOGGER.info(f"Processing YKR_ID {ykr_id}")
+    for mode in TRAVEL_MODES:
+        tt_grid = merge_traveltimes_to_grid(grid, matrix, mode)
+        catchments = dissolve_grid_to_catchments(
+            tt_grid, breakpoints=BREAKPOINTS, mode=mode
+        )
+        write_catchments_to_geojson(
+            catchments, user_args.year, mode, ykr_id, user_args.write_dir
+        )
+        LOGGER.info(f"    processed {mode}")
 
 
 def _get_args() -> argparse.Namespace:
@@ -46,7 +63,7 @@ def _get_args() -> argparse.Namespace:
     return args
 
 
-def get_ykr_id_from_path(path) -> str | None:
+def get_ykr_id_from_path(path: Path) -> str | None:
     """Gets the ykr id from a file path.
 
     Assumes that the id is the last thing in the file name. For example:
@@ -61,14 +78,17 @@ def get_ykr_id_from_path(path) -> str | None:
     return ykr_id
 
 
-def read_matrix_to_df(path: Path) -> pd.DataFrame | None:
+def read_matrix_to_df(path: Path, filetype: str) -> pd.DataFrame | None:
     """Reads a matrix txt file into a df
 
     Additionally performs some simple checks on the file and the df so only a
     valid df is returned.
     """
+    sep = ";"
+    if filetype == "csv":
+        sep = ","
     try:
-        matrix = pd.read_csv(path, sep=";", na_values=["-1"])
+        matrix = pd.read_csv(path, sep=sep, na_values=["-1"])
     except UnicodeDecodeError as e:
         LOGGER.warning(f"Read an inccompatible file: {path}\n({e})")
         return None
