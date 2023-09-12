@@ -49,7 +49,7 @@ def process_parallel(args: list) -> None:
             LOGGER.info(f"    saved output to {result}")
 
 
-def process_matrix(args: tuple) -> Path | None:
+def process_matrix(args: tuple) -> list | None:
     matrix_path, grid, user_args, filetype = args
     ykr_id = get_ykr_id_from_path(matrix_path)
     if not ykr_id:
@@ -58,6 +58,7 @@ def process_matrix(args: tuple) -> Path | None:
     if type(matrix) != pd.DataFrame:
         return None
     LOGGER.info(f"Processing YKR_ID {ykr_id}")
+    results = []
     for mode in TRAVEL_MODES:
         tt_grid = merge_traveltimes_to_grid(grid, matrix, mode)
         catchments = dissolve_grid_to_catchments(
@@ -66,7 +67,9 @@ def process_matrix(args: tuple) -> Path | None:
         write_path = write_catchments_to_geojson(
             catchments, user_args.year, mode, ykr_id, user_args.write_dir
         )
-        return write_path
+        results.append(write_path)
+        LOGGER.info(f"    processed {ykr_id}, {mode}")
+    return results
 
 
 def _get_args() -> argparse.Namespace:
