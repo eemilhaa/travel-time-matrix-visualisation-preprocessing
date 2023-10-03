@@ -29,9 +29,6 @@ def main() -> None:
         matrix_paths = list(user_args.matrix_dir.rglob("*.csv"))
 
     args = [(matrix_path, grid, user_args, filetype) for matrix_path in matrix_paths]
-    # for matrix_path in matrix_paths:
-    #     process_matrix((matrix_path, grid, user_args, filetype))
-    print(len(args))
     process_parallel(args=args)
     minify_files_in_dir(user_args.write_dir)
 
