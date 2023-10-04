@@ -5,7 +5,10 @@ gzip_files_in_dir() {
   for file in $(find . -type f)
   do
     gzip -9 -v "$file"  # Use maximum compression
-    touch -r "$file".gz "$file"  # Create an additional empty file named as the original for nginx
+
+    # The below creates an additional empty file named as the original
+    # This might be needed for some configs and for older nginx versions
+    #touch -r "$file".gz "$file"
   done
 }
 
