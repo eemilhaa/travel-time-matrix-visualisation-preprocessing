@@ -1,0 +1,12 @@
+#!/bin/bash
+
+gzip_files_in_dir() {
+  cd $1
+  for file in $(find . -type f)
+  do
+    gzip -9 -v "$file"  # Use maximum compression
+    touch -r "$file".gz "$file"  # Create an additional empty file named as the original for nginx
+  done
+}
+
+gzip_files_in_dir $1
