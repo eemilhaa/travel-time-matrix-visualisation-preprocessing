@@ -1,14 +1,14 @@
 # TTM-preprocessing
-Python tools for generating geodata from travel time matrices.
+Tools for producing geodata from travel time matrix text / csv files.
 See this [backend](https://github.com/DigitalGeographyLab/travel-time-matrix-visualisation-backend)
 for serving the data.
 
 ## Overview
 ### Features
 - Generate travel time catchment polygons in geojson format
-from TTM .txt files and YKR grid geodata
-- Produce a geojson file of the YKR grid
-- Simplification for geodataframes and geojsons -> minimal file sizes
+from TTM .txt / .csv files and YKR grid geodata
+- Produce a minimal geojson file of the YKR grid
+- Simplify geodataframes and geojsons, gzip everything -> lighter computation, minimal file sizes
 
 ### How the catchments are made
 Catchments are produced for each YKR grid cell / travel mode combination.
@@ -21,7 +21,7 @@ the result geojsons will have three (multi)polygons:
 - Area with `30 < traveltime <= 60`
 
 ### File sizes
-File sizes are kept as small as possible. In practice this means:
+File sizes are kept as small as possible by:
 
 At the geodataframe level:
 - Removing the unneeded information (such as extra columns, crs info)
@@ -29,28 +29,41 @@ At the geodataframe level:
 
 At the file level:
 - Removing all whitespace from the geojson objects written by geopandas
+- Gzipping everything
 
 You should expect one processed matrix (all catchments for all travel modes)
-to take up about 5GB of disk space.
+to take up about 2.5GB of disk space.
 This will of course vary based on the config used to generate the catchments.
 
-## Setup
+## Tools and dependencies
 ### Python
 Make a virtual env:
 ```console
-python -m venv venv && source venv/bin/activate
+python -m venv venv 
+```
+and activate it:
+```console
+source venv/bin/activate
 ```
 Install dependencies:
 ```console
 pip install -r requirements.txt
 ```
 
-### Data
+### Bash / gzip
+Bash and gzip are necessary for compressing the files.
+If you are on a unix-based system,
+you probably have both and everything should just work.
+If you are on windows,
+the easiest thing to do is probably to run a linux container.
+So, you'll need docker.
+
+## Input data
 You'll need:
 - All of the .txt files that make up a travel time matrix
 - The corresponding YKR grid
 
-## Generating the files
+## Processing the data
 ### Catchmets
 Optionally edit `preprocessing/config.py`
 to include the travel modes and breakpoints you wish to use.
@@ -74,3 +87,23 @@ python preprocessing/grid.py \
   -r <path/to/ykr-grid> \
   -w <directory/to/write/grid/to>
 ```
+
+### Compression
+**Unix-based**:
+
+Make the `compress` script executable and run it.
+Give the path to the directory containing the files you want to compress as the only argument.
+```console
+./compress <path/to/data_directory>
+```
+
+**Windows**:
+
+I do not know what the best way to do anything on windows would be,
+but this should get you a workable environment:
+```console
+docker run -it --rm -v ./:/home ubuntu:latest
+cd home
+```
+
+After that, follow the unix-based instructions.
