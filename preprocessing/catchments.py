@@ -124,7 +124,10 @@ def merge_traveltimes_to_grid(
     """Merges a travel mode's traveltimes to a grid based on ykr_id"""
 
     intrest_times = traveltimes[["from_id", mode]]
-    tt_grid = grid.merge(intrest_times, on=intrest_times["from_id"])
+    try:
+        tt_grid = grid.merge(intrest_times, left_on="id", right_on="from_id")
+    except:
+        tt_grid = grid.merge(intrest_times, left_on="YKR_ID", right_on="from_id")
     tt_grid = tt_grid[["geometry", mode]]
     return tt_grid
 

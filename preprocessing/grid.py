@@ -11,7 +11,10 @@ from minify_geojson import minify_file
 
 def main() -> None:
     args = _get_args()
-    grid = gpd.read_file(args.read_path)[["YKR_ID", "geometry"]]
+    try:
+        grid = gpd.read_file(args.read_path)[["YKR_ID", "geometry"]]
+    except KeyError:
+        grid = gpd.read_file(args.read_path)[["id", "geometry"]]
     grid = minify_geodataframe(grid, epsg=4326, coordinate_precision=5)
     write_path = Path(args.write_dir / "grid.geojson")
     grid.to_file(write_path, driver="GeoJSON")
