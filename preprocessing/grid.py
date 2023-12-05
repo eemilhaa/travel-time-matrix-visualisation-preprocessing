@@ -10,7 +10,7 @@ from minify_geojson import minify_file
 
 
 def main() -> None:
-    args = _get_args()
+    args = get_args()
     try:
         grid = gpd.read_file(args.read_path)[["YKR_ID", "geometry"]]
     except KeyError:
@@ -22,7 +22,7 @@ def main() -> None:
     LOGGER.info(f"Wrote grid geojson to {write_path}")
 
 
-def _get_args() -> argparse.Namespace:
+def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("-r", "--read_path", type=Path, required=True)
     parser.add_argument("-w", "--write_dir", type=Path, required=True)

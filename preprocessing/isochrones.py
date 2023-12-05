@@ -1,4 +1,4 @@
-"""A script for producing catchment polygons in geojson format."""
+"""A script for producing isochrone polygons in geojson format."""
 import argparse
 from pathlib import Path
 from multiprocessing import cpu_count
@@ -15,7 +15,7 @@ from minify_geojson import minify_files_in_dir
 
 
 def main() -> None:
-    user_args = _get_args()
+    user_args = get_args()
     try:
         grid = gpd.read_file(user_args.grid_path)[["YKR_ID", "geometry"]]
     except KeyError:
@@ -58,18 +58,18 @@ def process_matrix(args: tuple) -> list | None:
     results = []
     for mode in TRAVEL_MODES:
         tt_grid = merge_traveltimes_to_grid(grid, matrix, mode)
-        catchments = dissolve_grid_to_catchments(
+        isochrones = dissolve_grid_to_isochrones(
             tt_grid, breakpoints=BREAKPOINTS, mode=mode
         )
-        write_path = write_catchments_to_geojson(
-            catchments, user_args.year, mode, ykr_id, user_args.write_dir
+        write_path = write_isochrones_to_geojson(
+            isochrones, user_args.year, mode, ykr_id, user_args.write_dir
         )
         results.append(write_path)
         LOGGER.info(f"    processed {ykr_id}, {mode}")
     return results
 
 
-def _get_args() -> argparse.Namespace:
+def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("-g", "--grid_path", type=Path, required=True)
     parser.add_argument("-m", "--matrix_dir", type=Path, required=True)
@@ -132,12 +132,12 @@ def merge_traveltimes_to_grid(
     return tt_grid
 
 
-def dissolve_grid_to_catchments(
+def dissolve_grid_to_isochrones(
     tt_grid: gpd.GeoDataFrame,
     breakpoints: list,
     mode: str,
 ) -> gpd.GeoDataFrame:
-    """Makes the catchment polygons.
+    """Makes the isochrone polygons.
 
     This is done by iterating over the breakpoint values. Each cell gets
     assigned the smallest breakpoint value within which it can be reached. This
@@ -149,13 +149,13 @@ def dissolve_grid_to_catchments(
         mask = (tt_grid[mode] <= time)
         tt_grid.loc[mask, "t"] = time
     clean = tt_grid.dropna()
-    catchments = clean.dissolve("t").reset_index()
-    catchments["t"] = catchments["t"].astype(int)  # To save a tiny bit on output size
-    catchments = catchments[["geometry", "t"]]
-    return catchments
+    isochrones = clean.dissolve("t").reset_index()
+    isochrones["t"] = isochrones["t"].astype(int)  # To save a tiny bit on output size
+    isochrones = isochrones[["geometry", "t"]]
+    return isochrones
 
 
-def write_catchments_to_geojson(gdf, year, mode, ykr_id, write_dir):
+def write_isochrones_to_geojson(gdf, year, mode, ykr_id, write_dir):
     filename = f"{year}_{mode}_{ykr_id}.geojson"
     write_path = Path(write_dir/ filename)
     gdf.to_file(write_path, driver="GeoJSON")
