@@ -5,14 +5,14 @@ for serving the data.
 
 ## Overview
 ### Features
-- Generate travel time catchment polygons in geojson format
+- Generate travel time isochrone polygons in geojson format
 from TTM .txt / .csv files and YKR grid geodata
 - Produce a minimal geojson file of the YKR grid
 - Simplify geodataframes and geojsons, gzip everything -> lighter computation, minimal file sizes
 
-### How the catchments are made
-Catchments are produced for each YKR grid cell / travel mode combination.
-The data is classified into catchments based on breakpoints
+### How the isochrones are made
+isochrones are produced for each YKR grid cell / travel mode combination.
+The data is classified into isochrones based on breakpoints
 (values of travel time in minutes).
 For example, if using breakpoints of `[15, 30, 60]`,
 the result geojsons will have three (multi)polygons:
@@ -31,9 +31,9 @@ At the file level:
 - Removing all whitespace from the geojson objects written by geopandas
 - Gzipping everything
 
-You should expect one processed matrix (all catchments for all travel modes)
+You should expect one processed matrix (all isochrones for all travel modes)
 to take up about 2.5GB of disk space.
-This will of course vary based on the config used to generate the catchments.
+This will of course vary based on the config used to generate the isochrones.
 
 ## Tools and dependencies
 ### Python
@@ -68,12 +68,12 @@ You'll need:
 Optionally edit `preprocessing/config.py`
 to include the travel modes and breakpoints you wish to use.
 
-Generate the catchments with:
+Generate the isochrones with:
 ```console
-python preprocessing/catchments.py \
+python preprocessing/isochrones.py \
   -g <directory/with/ykr-grid> \
   -m <directory/with/matrix/files> \
-  -w <directory/to/write/catchments/to> \
+  -w <directory/to/write/isochrones/to> \
   -y <year/to/tag/output/files/with>
 ```
 The amount of time this takes depends on your hardware,
