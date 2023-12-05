@@ -60,8 +60,10 @@ So, you'll need docker.
 
 ## Input data
 You'll need:
-- All of the .txt files that make up a travel time matrix
+- All of the .txt / .csv files that make up a travel time matrix
 - The corresponding YKR grid
+
+The data is available for example [here](https://zenodo.org/records/8325043).
 
 ## Processing the data
 ### Catchmets
