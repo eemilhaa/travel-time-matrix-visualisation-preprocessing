@@ -6,6 +6,7 @@ def minify_geodataframe(
     gdf: gpd.GeoDataFrame,
     epsg: int,
     coordinate_precision: int,
+    keep_crs: bool=False,
 ) -> gpd.GeoDataFrame:
     """Reprojects, simplifies coordinates and removes crs info from a gdf
 
@@ -18,7 +19,8 @@ def minify_geodataframe(
         )
         return wkt.loads(rounded_wkt)
     processed = gdf.copy()
-    processed = processed.to_crs(epsg=4326)
+    processed = processed.to_crs(epsg=epsg)
     processed["geometry"] = processed["geometry"].apply(round_coords)
-    processed.crs = None
+    if not keep_crs:
+        processed.crs = None
     return processed
