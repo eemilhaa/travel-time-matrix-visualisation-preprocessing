@@ -10,11 +10,13 @@ import json
 from logger import LOGGER
 
 
-def minify_files_in_dir(directory: Path):
+def minify_files_in_dir(directory: Path, logging: bool=True):
     """Minifies all geojson files in a directory, in place."""
 
     for file_path in directory.rglob("*.geojson"):
         minify_file(file_path)
+        if logging:
+            LOGGER.info(f"Minified {file_path}")
 
 
 def minify_file(file_path: Path):
@@ -25,7 +27,6 @@ def minify_file(file_path: Path):
     minified = _minify_json_object(json_object)
     with open(file_path, "w") as outfile:
         outfile.write(minified)
-    LOGGER.info(f"Minified {file_path}")
 
 
 def _minify_json_object(json_object):
